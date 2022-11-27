@@ -27,20 +27,6 @@ const CARDS: CardProps[] = [
       "Lorem ipsum dolor sit amet consectetur adipisicing elit. Ad, totam sit? Quam sunt, ipsum dolorem labore praesentium reiciendis. Fuga repellat beatae id reprehenderit sit quisquam dolor eius pariatur error recusandae!",
     backgroundColor: randomHexColor(),
   },
-  {
-    id: "1681263771",
-    title: "4. Card",
-    content:
-      "Lorem ipsum dolor sit amet consectetur adipisicing elit. Ad, totam sit? Quam sunt, ipsum dolorem labore praesentium reiciendis. Fuga repellat beatae id reprehenderit sit quisquam dolor eius pariatur error recusandae!",
-    backgroundColor: randomHexColor(),
-  },
-  {
-    id: "2274690112",
-    title: "5. Card",
-    content:
-      "Lorem ipsum dolor sit amet consectetur adipisicing elit. Ad, totam sit? Quam sunt, ipsum dolorem labore praesentium reiciendis. Fuga repellat beatae id reprehenderit sit quisquam dolor eius pariatur error recusandae!",
-    backgroundColor: randomHexColor(),
-  },
 ];
 type Item = { item: CardProps; index: number };
 

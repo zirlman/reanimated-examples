@@ -8,22 +8,15 @@ import {
   ViewStyle,
   Pressable,
 } from "react-native";
-import {
-  Gesture,
-  GestureDetector,
-  PanGestureHandler,
-  PanGestureHandlerGestureEvent,
-} from "react-native-gesture-handler";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   Extrapolate,
   Extrapolation,
   runOnJS,
-  useAnimatedGestureHandler,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
   interpolate,
-  Layout,
 } from "react-native-reanimated";
 import { INTERVALS } from "../utils/util";
 

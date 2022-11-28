@@ -1,164 +1,161 @@
-import React, { useState } from "react";
-import { Text, SafeAreaView, StyleSheet, View, Pressable } from "react-native";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
-import Animated from "react-native-reanimated";
-import { Card, CardProps, CARD_HEIGHT } from "./src/cards/Card";
-import { getBorder, randomHexColor } from "./src/utils/util";
+import React, { useCallback, useRef } from "react";
+import { View, StyleSheet, Text, Dimensions, SafeAreaView } from "react-native";
+import {
+  Gesture,
+  GestureDetector,
+  GestureHandlerRootView,
+  TouchableOpacity,
+} from "react-native-gesture-handler";
+import Animated, {
+  SharedValue,
+  useAnimatedStyle,
+  useDerivedValue,
+  useSharedValue,
+  withSpring,
+} from "react-native-reanimated";
+import {
+  BottomSheet,
+  BottomSheetRefProps,
+} from "./src/bottomsheet/BottomSheet";
 
-const CARDS: CardProps[] = [
-  {
-    id: "3057301785",
-    title: "1. Card",
-    content:
-      "Lorem ipsum dolor sit amet consectetur adipisicing elit. Ad, totam sit? Quam sunt, ipsum dolorem labore praesentium reiciendis. Fuga repellat beatae id reprehenderit sit quisquam dolor eius pariatur error recusandae!",
-    backgroundColor: randomHexColor(),
-  },
-  {
-    id: "2833230558",
-    title: "2. Card",
-    content:
-      "Lorem ipsum dolor sit amet consectetur adipisicing elit. Ad, totam sit? Quam sunt, ipsum dolorem labore praesentium reiciendis. Fuga repellat beatae id reprehenderit sit quisquam dolor eius pariatur error recusandae!",
-    backgroundColor: randomHexColor(),
-  },
-  {
-    id: "4226539632",
-    title: "3. Card",
-    content:
-      "Lorem ipsum dolor sit amet consectetur adipisicing elit. Ad, totam sit? Quam sunt, ipsum dolorem labore praesentium reiciendis. Fuga repellat beatae id reprehenderit sit quisquam dolor eius pariatur error recusandae!",
-    backgroundColor: randomHexColor(),
-  },
-];
-type Item = { item: CardProps; index: number };
+const CIRCLE_SIZE = 64;
+const COLOR_1 = "#bdd9bf";
+const COLOR_2 = "#2e4052";
+const COLOR_3 = "#412234";
+
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
+
+type AnimatedPosition = {
+  x: SharedValue<number>;
+  y: SharedValue<number>;
+};
+const useFollowAnimatedPosition = ({ x, y }: AnimatedPosition) => {
+  const followX = useDerivedValue(() => {
+    return withSpring(x.value);
+  });
+  const followY = useDerivedValue(() => {
+    return withSpring(y.value);
+  });
+
+  const rStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ translateX: followX.value }, { translateY: followY.value }],
+    };
+  });
+
+  return { followX, followY, rStyle };
+};
+
+const useFollowAnimation = () => {
+  const translateX = useSharedValue(0);
+  const translateY = useSharedValue(0);
+
+  const follow = useFollowAnimatedPosition({
+    x: translateX,
+    y: translateY,
+  });
+  const follow2 = useFollowAnimatedPosition({
+    x: follow.followX,
+    y: follow.followY,
+  });
+  const follow3 = useFollowAnimatedPosition({
+    x: follow2.followX,
+    y: follow2.followY,
+  });
+
+  const context = useSharedValue({ x: 0, y: 0 });
+  const gesture = Gesture.Pan()
+    .onStart(() => {
+      context.value.x = translateX.value;
+      context.value.y = translateY.value;
+    })
+    .onUpdate((e) => {
+      translateX.value = e.translationX + context.value.x;
+      translateY.value = e.translationY + context.value.y;
+    })
+    .onEnd(() => {
+      translateX.value = translateX.value > SCREEN_WIDTH / 2 ? SCREEN_WIDTH : 0;
+    });
+
+  return { follow, follow2, follow3, gesture };
+};
 
 export default function App() {
-  const [cards, setCards] = useState(CARDS);
+  const { follow, follow2, follow3, gesture } = useFollowAnimation();
 
-  const displayAsFirst = (id: string) => {
-    const cardIdx = cards.findIndex((c) => c.id === id);
+  const bottomSheetRef = useRef<BottomSheetRefProps>(null);
 
-    setCards([
-      ...cards.slice(0, cardIdx),
-      ...cards.slice(cardIdx + 1),
-      cards[cardIdx],
-    ]);
-  };
+  const onCirclePress = useCallback(() => {
+    const scrollTo = bottomSheetRef.current?.isActive() ? 0 : -200;
 
-  const displayAsLast = (id: string) => {
-    const cardIdx = cards.findIndex((c) => c.id === id);
-
-    setCards([
-      cards[cardIdx],
-      ...cards.slice(0, cardIdx),
-      ...cards.slice(cardIdx + 1),
-    ]);
-  };
-
-  const addCard = () => {
-    const newCard: CardProps = {
-      id: Date.now().toString(),
-      title: `${cards.length + 1}. Card`,
-      content:
-        "Lorem ipsum dolor sit amet consectetur adipisicing elit. Ad, totam sit? Quam sunt, ipsum dolorem labore praesentium reiciendis. Fuga repellat beatae id reprehenderit sit quisquam dolor eius pariatur error recusandae!",
-      backgroundColor: randomHexColor(),
-    };
-
-    setCards([...cards, newCard]);
-  };
-
-  const removeCard = (id: string) => {
-    const cardIdx = cards.findIndex((c) => c.id === id);
-
-    setCards([...cards.slice(0, cardIdx), ...cards.slice(cardIdx + 1)]);
-  };
-
-  const renderCard = ({ item: props, index }: Item) => {
-    return (
-      <Card
-        key={props.id}
-        {...props}
-        offset={index}
-        onGestureEnd={
-          index === cards.length - 1 ? displayAsLast : displayAsFirst
-        }
-        onClosePress={() => removeCard(props.id)}
-      />
-    );
-  };
+    bottomSheetRef.current?.scrollTo(scrollTo);
+  }, []);
 
   return (
-    <SafeAreaView style={styles.container}>
-      <GestureHandlerRootView>
-        <View style={styles.header}>
-          <Text style={styles.text}>Header</Text>
-        </View>
-        <Animated.FlatList
-          contentContainerStyle={styles.cards}
-          data={cards}
-          renderItem={renderCard}
-          scrollEnabled={false}
-        />
-      </GestureHandlerRootView>
-      <View style={styles.footer}>
-        <Pressable onPress={addCard} style={styles.button}>
-          <Text style={styles.text}>Add card</Text>
-        </Pressable>
+    <GestureHandlerRootView style={styles.flex1}>
+      <View style={styles.container}>
+        <Animated.View
+          style={[styles.circle, follow2.rStyle, { backgroundColor: COLOR_2 }]}
+        >
+          <Text style={styles.text}>2</Text>
+        </Animated.View>
+        <Animated.View
+          style={[styles.circle, follow3.rStyle, { backgroundColor: COLOR_3 }]}
+        >
+          <Text style={styles.text}>3</Text>
+        </Animated.View>
+
+        <GestureDetector gesture={gesture}>
+          <Animated.View
+            style={[styles.circle, follow.rStyle, { backgroundColor: COLOR_1 }]}
+          >
+            <Text style={styles.text}>1</Text>
+          </Animated.View>
+        </GestureDetector>
+        <TouchableOpacity style={styles.button} onPress={onCirclePress}>
+          <Text style={styles.text}>Toggle</Text>
+        </TouchableOpacity>
+        <BottomSheet ref={bottomSheetRef} backgroundColor={COLOR_3} />
       </View>
-    </SafeAreaView>
+    </GestureHandlerRootView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    paddingVertical: "8%",
+  flex1: {
     flex: 1,
-    backgroundColor: "#082032",
   },
-  header: {
-    position: "absolute",
-    top: 0,
-    width: "100%",
+  container: {
+    flex: 1,
 
-    height: "5%",
-    ...getBorder(),
-  },
-  cards: {
-    paddingHorizontal: 8,
-    paddingTop: CARD_HEIGHT * 1.2,
+    backgroundColor: "#111",
 
-    // alignSelf: "center",
     alignItems: "center",
-    height: "100%",
-
-    overflow: "visible",
-
-    backgroundColor: "transparent",
-    ...getBorder("white"),
-  },
-
-  footer: {
-    position: "absolute",
-    bottom: 0,
-    width: "100%",
-    height: "10%",
-
     justifyContent: "center",
-    alignContent: "center",
-
-    ...getBorder(),
   },
+
+  circle: {
+    position: "absolute",
+    height: CIRCLE_SIZE,
+    width: CIRCLE_SIZE,
+
+    borderRadius: CIRCLE_SIZE / 2,
+
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  text: {},
 
   button: {
-    height: "50%",
-    backgroundColor: "#1711fd",
+    height: 60,
 
+    borderRadius: 30,
+    aspectRatio: 1,
+    backgroundColor: "white",
+    opacity: 0.6,
+
+    alignItems: "center",
     justifyContent: "center",
-    alignContent: "center",
-  },
-
-  text: {
-    color: "#fefefe",
-    fontSize: 16,
-    textAlign: "center",
-    textAlignVertical: "center",
   },
 });

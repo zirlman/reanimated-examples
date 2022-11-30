@@ -3,6 +3,7 @@ export const getBorder = (borderColor = "red", borderWidth = 1) => {
 };
 
 export const INTERVALS = {
+  ms150: 150,
   ms250: 250,
   ms500: 500,
   ms750: 750,

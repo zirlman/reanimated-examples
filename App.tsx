@@ -1,161 +1,179 @@
-import React, { useCallback, useRef } from "react";
-import { View, StyleSheet, Text, Dimensions, SafeAreaView } from "react-native";
+import * as React from "react";
+import { Text, View, StyleSheet } from "react-native";
+import { NavigationContainer, RouteProp } from "@react-navigation/native";
 import {
-  Gesture,
-  GestureDetector,
-  GestureHandlerRootView,
-  TouchableOpacity,
-} from "react-native-gesture-handler";
-import Animated, {
-  SharedValue,
-  useAnimatedStyle,
-  useDerivedValue,
-  useSharedValue,
-  withSpring,
-} from "react-native-reanimated";
-import {
-  BottomSheet,
-  BottomSheetRefProps,
-} from "./src/bottomsheet/BottomSheet";
+  BottomTabBarProps,
+  BottomTabScreenProps,
+  createBottomTabNavigator,
+} from "@react-navigation/bottom-tabs";
+import { FC } from "react";
+import { AnimatedTabBar } from "./src/navigation/AnimatedTabBar";
+import Lottie from "lottie-react-native";
 
-const CIRCLE_SIZE = 64;
-const COLOR_1 = "#bdd9bf";
-const COLOR_2 = "#2e4052";
-const COLOR_3 = "#412234";
+const ICON_SIZE = 32;
 
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
+export interface MyScreenProps {
+  text: string;
+}
 
-type AnimatedPosition = {
-  x: SharedValue<number>;
-  y: SharedValue<number>;
-};
-const useFollowAnimatedPosition = ({ x, y }: AnimatedPosition) => {
-  const followX = useDerivedValue(() => {
-    return withSpring(x.value);
-  });
-  const followY = useDerivedValue(() => {
-    return withSpring(y.value);
-  });
+enum RouteNames {
+  Home = "Home",
+  Alerts = "Alerts",
+  Settings = "Settings",
+}
 
-  const rStyle = useAnimatedStyle(() => {
-    return {
-      transform: [{ translateX: followX.value }, { translateY: followY.value }],
-    };
-  });
-
-  return { followX, followY, rStyle };
+type RoutePropsParamList = {
+  [RouteNames.Home]: MyScreenProps;
+  [RouteNames.Alerts]: MyScreenProps;
+  [RouteNames.Settings]: MyScreenProps;
 };
 
-const useFollowAnimation = () => {
-  const translateX = useSharedValue(0);
-  const translateY = useSharedValue(0);
-
-  const follow = useFollowAnimatedPosition({
-    x: translateX,
-    y: translateY,
-  });
-  const follow2 = useFollowAnimatedPosition({
-    x: follow.followX,
-    y: follow.followY,
-  });
-  const follow3 = useFollowAnimatedPosition({
-    x: follow2.followX,
-    y: follow2.followY,
-  });
-
-  const context = useSharedValue({ x: 0, y: 0 });
-  const gesture = Gesture.Pan()
-    .onStart(() => {
-      context.value.x = translateX.value;
-      context.value.y = translateY.value;
-    })
-    .onUpdate((e) => {
-      translateX.value = e.translationX + context.value.x;
-      translateY.value = e.translationY + context.value.y;
-    })
-    .onEnd(() => {
-      translateX.value = translateX.value > SCREEN_WIDTH / 2 ? SCREEN_WIDTH : 0;
-    });
-
-  return { follow, follow2, follow3, gesture };
+const HomeScreen: FC<
+  BottomTabScreenProps<RoutePropsParamList, RouteNames.Home>
+> = ({ route }) => {
+  return (
+    <View
+      style={{
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        backgroundColor: "#67C6E6",
+      }}
+    >
+      <Text>{route.params.text}</Text>
+    </View>
+  );
 };
+
+const AlertsScreen: FC<
+  BottomTabScreenProps<RoutePropsParamList, RouteNames.Alerts>
+> = ({ route }) => {
+  return (
+    <View
+      style={{
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        backgroundColor: "#BE4710",
+      }}
+    >
+      <Text>{route.params.text}</Text>
+    </View>
+  );
+};
+
+const SettingsScreen: FC<
+  BottomTabScreenProps<RoutePropsParamList, RouteNames.Settings>
+> = ({ route }) => {
+  return (
+    <View
+      style={{
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        backgroundColor: "#CCAAF3",
+      }}
+    >
+      <Text>{route.params.text}</Text>
+    </View>
+  );
+};
+
+const Tab = createBottomTabNavigator<RoutePropsParamList>();
 
 export default function App() {
-  const { follow, follow2, follow3, gesture } = useFollowAnimation();
-
-  const bottomSheetRef = useRef<BottomSheetRefProps>(null);
-
-  const onCirclePress = useCallback(() => {
-    const scrollTo = bottomSheetRef.current?.isActive() ? 0 : -200;
-
-    bottomSheetRef.current?.scrollTo(scrollTo);
-  }, []);
-
   return (
-    <GestureHandlerRootView style={styles.flex1}>
-      <View style={styles.container}>
-        <Animated.View
-          style={[styles.circle, follow2.rStyle, { backgroundColor: COLOR_2 }]}
-        >
-          <Text style={styles.text}>2</Text>
-        </Animated.View>
-        <Animated.View
-          style={[styles.circle, follow3.rStyle, { backgroundColor: COLOR_3 }]}
-        >
-          <Text style={styles.text}>3</Text>
-        </Animated.View>
-
-        <GestureDetector gesture={gesture}>
-          <Animated.View
-            style={[styles.circle, follow.rStyle, { backgroundColor: COLOR_1 }]}
-          >
-            <Text style={styles.text}>1</Text>
-          </Animated.View>
-        </GestureDetector>
-        <TouchableOpacity style={styles.button} onPress={onCirclePress}>
-          <Text style={styles.text}>Toggle</Text>
-        </TouchableOpacity>
-        <BottomSheet ref={bottomSheetRef} backgroundColor={COLOR_3} />
-      </View>
-    </GestureHandlerRootView>
+    <NavigationContainer>
+      <Tab.Navigator tabBar={(props) => <AnimatedTabBar {...props} />}>
+        <Tab.Screen
+          name={RouteNames.Home}
+          component={HomeScreen}
+          options={{
+            // @ts-ignore
+            tabBarIcon: ({ ref }) => (
+              <Lottie
+                ref={ref}
+                loop={false}
+                autoPlay={false}
+                source={require("./src/assets/lottie/home.json")}
+                style={styles.icon}
+              />
+            ),
+          }}
+          initialParams={{ text: "Home" }}
+        />
+        <Tab.Screen
+          name={RouteNames.Alerts}
+          component={AlertsScreen}
+          options={{
+            // @ts-ignore
+            tabBarIcon: ({ ref }) => (
+              <Lottie
+                ref={ref}
+                loop={false}
+                autoPlay={false}
+                source={require("./src/assets/lottie/alerts.json")}
+                style={styles.icon}
+              />
+            ),
+          }}
+          initialParams={{ text: "Alerts" }}
+        />
+        <Tab.Screen
+          name={RouteNames.Settings}
+          component={SettingsScreen}
+          options={{
+            // @ts-ignore
+            tabBarIcon: ({ ref }) => (
+              <Lottie
+                ref={ref}
+                loop={false}
+                autoPlay={false}
+                source={require("./src/assets/lottie/settings.json")}
+                style={styles.icon}
+              />
+            ),
+          }}
+          initialParams={{ text: "Settings" }}
+        />
+      </Tab.Navigator>
+    </NavigationContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  flex1: {
-    flex: 1,
-  },
-  container: {
-    flex: 1,
-
-    backgroundColor: "#111",
-
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  circle: {
-    position: "absolute",
-    height: CIRCLE_SIZE,
-    width: CIRCLE_SIZE,
-
-    borderRadius: CIRCLE_SIZE / 2,
-
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  text: {},
-
-  button: {
-    height: 60,
-
-    borderRadius: 30,
-    aspectRatio: 1,
+  tabBar: {
     backgroundColor: "white",
-    opacity: 0.6,
+  },
+  activeBackground: {
+    position: "absolute",
+  },
+  tabBarItem: {
+    flexDirection: "row",
+    justifyContent: "space-evenly",
+  },
+  component: {
+    height: 60,
+    width: 60,
+    marginTop: -5,
+  },
+  componentCircle: {
+    flex: 1,
+    borderRadius: 30,
+    backgroundColor: "white",
+  },
 
-    alignItems: "center",
+  iconContainer: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     justifyContent: "center",
+    alignItems: "center",
+  },
+  icon: {
+    height: ICON_SIZE,
+    width: ICON_SIZE,
   },
 });
